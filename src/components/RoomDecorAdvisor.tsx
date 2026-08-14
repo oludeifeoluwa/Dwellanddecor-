@@ -20,11 +20,11 @@ import {
   Tag
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
-import { handleImageError, getCleanImageUrl } from '../utils/imageHelper';
+// import { handleImageError, getCleanImageUrl } from '../utils/imageHelper';
 
 // Public room aesthetic images served from /public/images/
 const cozySunsetNeonImg = '/images/IMG-20260806-WA0188(1).jpg';
-const cyberSunsetRoomImg = '/images/cyber_sunset_room.jpg';
+const cyberSunsetRoomImg = '/images/IMG-20260806-WA0187.jpg.jpg';
 const neonFlexWaveImg = '/images/neon_flex_wave.jpg';
 const fairyLightBotanicalImg = '/images/fairy_light_botanical.jpg';
 const popMusicWallImg = '/images/pop_music_wall.jpg';
