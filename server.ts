@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
@@ -128,12 +129,26 @@ Focus strictly on small decor items like LED lighting, wall adhesive hooks, desk
   }
 });
 
+// Diagnostic endpoint for image serving
+app.get("/api/test-images", (_req, res) => {
+  try {
+    const imagesPath = path.join(process.cwd(), "public/images");
+    const images = fs.readdirSync(imagesPath).slice(0, 5);
+    res.json({ 
+      status: "Images folder found", 
+      path: imagesPath,
+      sampleImages: images,
+      totalCount: fs.readdirSync(imagesPath).length
+    });
+  } catch (err) {
+    res.status(500).json({ error: err instanceof Error ? err.message : "Unknown error" });
+  }
+});
+
 // Serve static image files with high priority
-app.use("/images", express.static(path.join(process.cwd(), "public/images")));
-app.use("/images", express.static(path.join(process.cwd(), "src/assets/images")));
-app.use("/public/images", express.static(path.join(process.cwd(), "public/images")));
-app.use("/src/assets/images", express.static(path.join(process.cwd(), "src/assets/images")));
-app.use(express.static(path.join(process.cwd(), "public")));
+app.use("/images", express.static(path.join(process.cwd(), "public/images"), { maxAge: '1d' }));
+app.use("/images", express.static(path.join(process.cwd(), "src/assets/images"), { maxAge: '1d' }));
+app.use(express.static(path.join(process.cwd(), "public"), { maxAge: '1d' }));
 
 // Serve Vite dev server or static files
 async function startServer() {
@@ -152,7 +167,8 @@ async function startServer() {
   }
 
   app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Home & Decor Server running on http://0.0.0.0:${PORT}`);
+    console.log(`🏠 Home & Decor Server running on http://localhost:${PORT}`);
+    console.log(`📸 Test images: http://localhost:${PORT}/api/test-images`);
   });
 }
 

@@ -130,6 +130,15 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [products, setProducts] = useState<Product[]>(() => {
+    // Cache invalidation: clear products if version doesn't match
+    const cacheVersion = '1.0.4-images-clean';
+    const savedVersion = localStorage.getItem('hd_cache_version');
+    if (savedVersion !== cacheVersion) {
+      localStorage.removeItem('hd_products');
+      localStorage.removeItem('hd_cache_version');
+      localStorage.setItem('hd_cache_version', cacheVersion);
+    }
+
     const saved = localStorage.getItem('hd_products');
     const initialMap = new Map(INITIAL_PRODUCTS.map(p => [p.id, p]));
     if (saved) {
@@ -154,6 +163,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }));
         return [...updatedInitial, ...customProducts];
       } catch {
+        localStorage.removeItem('hd_cache_version');
+        localStorage.setItem('hd_cache_version', cacheVersion);
         return INITIAL_PRODUCTS;
       }
     }
@@ -355,24 +366,46 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const unsubscribeAuth = onAuthSync(async (firebaseUser) => {
       if (firebaseUser) {
-        const profile = await fetchUserProfile(firebaseUser.uid);
-        const mappedUser: UserAccount = {
-          id: firebaseUser.uid,
-          fullName: profile?.fullName || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Dwell Student',
-          email: firebaseUser.email || '',
-          phone: profile?.phone || '+234 812 345 6789',
-          university: profile?.university || 'Main Campus University',
-          dormHall: profile?.dormHall || 'Hostel Residence Hall',
-          roomNumber: profile?.roomNumber || 'Room 101',
-          address: `${profile?.dormHall || 'Hostel'}, ${profile?.roomNumber || ''}`,
-          city: 'Lagos',
-          state: 'Lagos State',
-          rewardPoints: profile?.points || 100,
-          isStudentVerified: true,
-          avatarUrl: firebaseUser.photoURL || '/images/detachable_cat_mirror.jpg',
-          createdAt: profile?.createdAt || new Date().toISOString()
-        };
-        setCurrentUser(mappedUser);
+        try {
+          const profile = await fetchUserProfile(firebaseUser.uid);
+          const mappedUser: UserAccount = {
+            id: firebaseUser.uid,
+            fullName: profile?.fullName || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Dwell Student',
+            email: firebaseUser.email || '',
+            phone: profile?.phone || '+234 812 345 6789',
+            university: profile?.university || 'Main Campus University',
+            dormHall: profile?.dormHall || 'Hostel Residence Hall',
+            roomNumber: profile?.roomNumber || 'Room 101',
+            address: `${profile?.dormHall || 'Hostel'}, ${profile?.roomNumber || ''}`,
+            city: 'Lagos',
+            state: 'Lagos State',
+            rewardPoints: profile?.points || 100,
+            isStudentVerified: true,
+            avatarUrl: firebaseUser.photoURL || '/images/detachable_cat_mirror.jpg',
+            createdAt: profile?.createdAt || new Date().toISOString()
+          };
+          setCurrentUser(mappedUser);
+        } catch (err) {
+          console.warn('⚠️ Profile sync notice (non-blocking):', err instanceof Error ? err.message : String(err));
+          // Create user without profile data - app continues to work
+          const fallbackUser: UserAccount = {
+            id: firebaseUser.uid,
+            fullName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Dwell Student',
+            email: firebaseUser.email || '',
+            phone: '+234 812 345 6789',
+            university: 'Main Campus University',
+            dormHall: 'Hostel Residence Hall',
+            roomNumber: 'Room 101',
+            address: 'Hostel, Room 101',
+            city: 'Lagos',
+            state: 'Lagos State',
+            rewardPoints: 100,
+            isStudentVerified: true,
+            avatarUrl: firebaseUser.photoURL || '/images/detachable_cat_mirror.jpg',
+            createdAt: new Date().toISOString()
+          };
+          setCurrentUser(fallbackUser);
+        }
       }
     });
 
@@ -396,7 +429,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Real-time Firestore Sync for Products Catalog
   useEffect(() => {
     // Auto-seed INITIAL_PRODUCTS to Firestore to ensure cloud database has latest image paths
-    seedProductsToFirestore(INITIAL_PRODUCTS).catch(err => console.warn('Product auto-seed notice:', err));
+    // Non-blocking: if Firebase fails, app still works with local data
+    seedProductsToFirestore(INITIAL_PRODUCTS).catch(err => {
+      console.warn('⚠️ Firebase sync notice (non-blocking):', err instanceof Error ? err.message : String(err));
+      // App continues working with INITIAL_PRODUCTS from localStorage/state
+    });
 
     const unsubscribeProducts = subscribeToRealtimeProducts((realtimeProducts) => {
       if (realtimeProducts && realtimeProducts.length > 0) {
