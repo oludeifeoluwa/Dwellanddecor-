@@ -1,7 +1,7 @@
 import React from  'react';
 
 // Standard clean fallback image path available in /public/images/
-export const DEFAULT_PRODUCT_FALLBACK_IMAGE = '/images/IMG-20260806-WA0168';
+export const DEFAULT_PRODUCT_FALLBACK_IMAGE = '/images/IMG-20260806-WA0168.jpg';
 
 // Comprehensive dictionary mapping keywords to authentic local image assets
 const KNOWN_IMAGE_MAP: Record<string, string> = {
