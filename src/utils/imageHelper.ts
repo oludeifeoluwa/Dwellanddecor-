@@ -55,7 +55,7 @@ const KNOWN_IMAGE_MAP: Record<string, string> = {
   'closet drawer': '/images/IMG-20260806-WA0162.jpg',
   'wallpaper': '/images/IMG-20260806-WA0115.jpg',
   'contact paper': '/images/IMG-20260806-WA0115.jpg',
-  'glow': '/images/IMG-20260806-WA0168.jpg',
+  'glow': '/images/IMG-20260806-WA0114.jpg',
   'stars': '/images/IMG-20260806-WA0114.jpg',
   'bow wall': '/images/IMG-20260806-WA0165.jpg',
   'ribbon wall': '/images/IMG-20260806-WA0165.jpg',
