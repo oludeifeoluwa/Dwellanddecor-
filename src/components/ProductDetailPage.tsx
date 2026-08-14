@@ -285,7 +285,7 @@ export const ProductDetailPage: React.FC = () => {
           </div>
 
           {/* Student Guarantee Box */}
-          <div className="bg-[#f8f1ef] p-4 rounded-2xl border border-[#e8d8d4] text-xs space-y-2 text-[#594744]">
+          {/*<div className="bg-[#f8f1ef] p-4 rounded-2xl border border-[#e8d8d4] text-xs space-y-2 text-[#594744]">
             <div className="flex items-center gap-2 font-bold text-[#2c2221]">
               <ShieldCheck className="w-4 h-4 text-[#f09a8e]" />
               <span>Trace-Free Wall & Dorm Safety Promise</span>
@@ -293,7 +293,7 @@ export const ProductDetailPage: React.FC = () => {
             <p className="text-[11px] text-[#735853] leading-relaxed">
               Designed specifically for student accommodations and rental walls. Easy clean removal with zero paint damage or sticky residue.
             </p>
-          </div>
+          </div>*/}
 
         </div>
 
