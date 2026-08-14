@@ -25,7 +25,7 @@ import { handleImageError } from '../utils/imageHelper';
 // Public room aesthetic images served from /public/images/
 const cozySunsetNeonImg = '/images/IMG-20260806-WA0188(1).jpg';
 const cyberSunsetRoomImg = '/images/IMG-20260806-WA0187.jpg';
-const neonFlexWaveImg = '/images/IMG-20260806-WA0186.jpg';
+const neonFlexWaveImg = '/images/IMG-20260814-WA0091.jpg';
 const fairyLightBotanicalImg = '/images/IMG-20260806-WA0128.jpg';
 const popMusicWallImg = '/images/IMG-20260806-WA0189.jpg';
 const ultimateDormGlowupImg = '/images/IMG-20260814-WA0090.jpg';
