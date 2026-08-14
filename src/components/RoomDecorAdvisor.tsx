@@ -20,7 +20,7 @@ import {
   Tag
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
-import { handleImageError, getCleanImageUrl } from '../utils/imageHelper';
+import { handleImageError } from '../utils/imageHelper';
 
 // Public room aesthetic images served from /public/images/
 const cozySunsetNeonImg = '/images/IMG-20260806-WA0188(1).jpg';
@@ -424,7 +424,7 @@ export const RoomDecorAdvisor: React.FC = () => {
                   {/* Image Container with 4:3 Aspect Ratio */}
                   <div className="relative aspect-[4/3] bg-[#faf5f4] overflow-hidden">
                     <img 
-                      src={getCleanImageUrl(pkg.image, pkg.name)} 
+                    //  src={getCleanImageUrl(pkg.image, pkg.name)} 
                       alt={pkg.name} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                       onError={handleImageError}
