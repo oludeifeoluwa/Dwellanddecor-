@@ -425,6 +425,7 @@ export const RoomDecorAdvisor: React.FC = () => {
                   <div className="relative aspect-[4/3] bg-[#faf5f4] overflow-hidden">
                     <img 
                     //  src={getCleanImageUrl(pkg.image, pkg.name)} 
+                      src = {pkg.image}
                       alt={pkg.name} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                       onError={handleImageError}
