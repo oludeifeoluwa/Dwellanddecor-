@@ -68,7 +68,7 @@ const KNOWN_IMAGE_MAP: Record<string, string> = {
   'led butterfly': '/images/IMG-20260806-WA0075.jpg',
   'marquee': '/images/IMG-20260806-WA0073.jpg',
   'letter': '/images/IMG-20260806-WA0073.jpg',
-  'sunset': '/images/IMG-20260806-WA0101.jpg',
+  'sunset': '/images/IMG-20260806-WA0188.jpg',
   'fairy': '/images/IMG-20260806-WA0149.jpg',
   'led strip': '/images/IMG-20260806-WA0196.jpg',
   'stripe light': '/images/IMG-20260806-WA0196.jpg',
