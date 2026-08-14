@@ -23,8 +23,8 @@ import { useShop } from '../context/ShopContext';
 import { handleImageError } from '../utils/imageHelper';
 
 // Public room aesthetic images served from /public/images/
-const cozySunsetNeonImg = '/images/IMG-20260806-WA0188(1).jpg';
-const cyberSunsetRoomImg = '/images/IMG-20260806-WA0187.jpg.jpg';
+const cozySunsetNeonImg = '/images/IMG-20260806-WA0188.jpg';
+const cyberSunsetRoomImg = '/images/IMG-20260806-WA0187.jpg';
 const neonFlexWaveImg = '/images/neon_flex_wave.jpg';
 const fairyLightBotanicalImg = '/images/fairy_light_botanical.jpg';
 const popMusicWallImg = '/images/pop_music_wall.jpg';
