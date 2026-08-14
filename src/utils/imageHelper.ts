@@ -58,7 +58,7 @@ const KNOWN_IMAGE_MAP: Record<string, string> = {
   'glow': '/images/IMG-20260806-WA0114.jpg',
   'stars': '/images/IMG-20260806-WA0114.jpg',
   'bow wall': '/images/IMG-20260806-WA0165.jpg',
-  'ribbon wall': '/images/IMG-20260814-WA0046.jpg',
+  'ribbon wall': '/images/IMG-20260806-WA0165.jpg',
   'banner': '/images/IMG-20260814-WA0046.jpg',
   'pull flag': '/images/IMG-20260814-WA0046.jpg',
   'pink butterfly': '/images/IMG-20260806-WA0075.jpg',
