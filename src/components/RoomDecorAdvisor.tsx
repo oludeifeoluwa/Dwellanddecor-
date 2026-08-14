@@ -20,7 +20,7 @@ import {
   Tag
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
-// import { handleImageError, getCleanImageUrl } from '../utils/imageHelper';
+import { handleImageError, getCleanImageUrl } from '../utils/imageHelper';
 
 // Public room aesthetic images served from /public/images/
 const cozySunsetNeonImg = '/images/IMG-20260806-WA0188(1).jpg';
