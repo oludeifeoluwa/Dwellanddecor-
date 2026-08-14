@@ -1,0 +1,60 @@
+{
+  "entities": {
+    "users": {
+      "title": "User Profile",
+      "description": "User account information and address details",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "fullName": { "type": "string" },
+        "phone": { "type": "string" },
+        "university": { "type": "string" },
+        "dormHall": { "type": "string" },
+        "roomNumber": { "type": "string" },
+        "role": { "type": "string" },
+        "points": { "type": "number" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "orders": {
+      "title": "Customer Orders",
+      "description": "Orders placed by students for dorm decor",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "date": { "type": "string" },
+        "items": { "type": "array" },
+        "totalNGN": { "type": "number" },
+        "deliveryFeeNGN": { "type": "number" },
+        "status": { "type": "string" },
+        "paymentStatus": { "type": "string" },
+        "paystackRef": { "type": "string" },
+        "trackingNumber": { "type": "string" },
+        "customer": { "type": "object" }
+      },
+      "required": ["id", "userId", "date", "items", "totalNGN"]
+    },
+    "products": {
+      "title": "Store Products",
+      "description": "Dwell & Decor product catalog",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "priceNGN": { "type": "number" },
+        "description": { "type": "string" },
+        "image": { "type": "string" },
+        "additionalImages": { "type": "array" },
+        "rating": { "type": "number" },
+        "reviewCount": { "type": "number" },
+        "colors": { "type": "array" },
+        "isBestSeller": { "type": "boolean" },
+        "isNewArrival": { "type": "boolean" },
+        "inStock": { "type": "boolean" },
+        "stockCount": { "type": "number" }
+      },
+      "required": ["id", "name", "priceNGN"]
+    }
+  }
+}

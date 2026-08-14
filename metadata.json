@@ -1,0 +1,6 @@
+{
+  "name": "Dwell & Decor",
+  "description": "Modern ecommerce shop for student room and dorm decor, including wall hooks, LED lights, desk organizers, and mini planters.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
