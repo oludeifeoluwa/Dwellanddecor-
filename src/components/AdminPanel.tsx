@@ -184,11 +184,8 @@ export const AdminPanel: React.FC = () => {
 
   // Authorized Admin Emails List
   const ALLOWED_ADMIN_EMAILS = [
-    'admin@dwellanddecor.ng',
-    'admin@dwellanddecor.com',
-    'owner@dwellanddecor.com',
-    'store.manager@dwellanddecor.ng',
-    'admin'
+    'toluwalasedaboh65@gmail.com',
+    'dabohtoluwalase@gmail.com'
   ];
 
   const handleManagerLogin = (e: React.FormEvent) => {
@@ -202,7 +199,7 @@ export const AdminPanel: React.FC = () => {
       return;
     }
 
-    const isAdminEmailDomain = cleanEmail.endsWith('@dwellanddecor.ng') || cleanEmail.endsWith('@dwellanddecor.com') || cleanEmail === 'admin';
+    const isAdminEmailDomain = cleanEmail.endsWith('@gmail.com') || cleanEmail.endsWith('@gmail.com');
     const isExplicitAdminEmail = ALLOWED_ADMIN_EMAILS.includes(cleanEmail) || cleanEmail.startsWith('admin');
 
     if (!isAdminEmailDomain && !isExplicitAdminEmail) {
@@ -210,12 +207,12 @@ export const AdminPanel: React.FC = () => {
       return;
     }
 
-    if (inputPasscode !== 'admin123' && inputPasscode !== 'admin2026' && inputPasscode.length < 4) {
+    if (inputPasscode !== 'Ololade2k_%' && inputPasscode.length < 4) {
       setLoginError('Invalid Admin Passcode.');
       return;
     }
 
-    const effectiveEmail = cleanEmail.includes('@') ? cleanEmail : 'admin@dwellanddecor.ng';
+    const effectiveEmail = cleanEmail.includes('@') ? cleanEmail : 'admin';
     authenticateAdmin(effectiveEmail);
     setLoginError('');
   };
