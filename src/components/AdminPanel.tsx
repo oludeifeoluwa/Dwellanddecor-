@@ -199,11 +199,11 @@ export const AdminPanel: React.FC = () => {
       return;
     }
 
-    const isAdminEmailDomain = cleanEmail.endsWith('@gmail.com') || cleanEmail.endsWith('@gmail.com');
-    const isExplicitAdminEmail = ALLOWED_ADMIN_EMAILS.includes(cleanEmail) || cleanEmail.startsWith('admin');
+    const isAdminEmailDomain = cleanEmail.endsWith('@gmail.com');
+    const isExplicitAdminEmail = ALLOWED_ADMIN_EMAILS.includes(cleanEmail) ;
 
     if (!isAdminEmailDomain && !isExplicitAdminEmail) {
-      setLoginError('Access Denied. Only dedicated admin email addresses (@dwellanddecor.ng, @dwellanddecor.com, or "admin") can access Store Operations.');
+      setLoginError('Access Denied.');
       return;
     }
 
@@ -212,7 +212,7 @@ export const AdminPanel: React.FC = () => {
       return;
     }
 
-    const effectiveEmail = cleanEmail.includes('@') ? cleanEmail : 'admin';
+    const effectiveEmail = cleanEmail.includes('@') ? cleanEmail : 'error';
     authenticateAdmin(effectiveEmail);
     setLoginError('');
   };
