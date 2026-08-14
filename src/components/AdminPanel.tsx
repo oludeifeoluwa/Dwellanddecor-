@@ -74,8 +74,8 @@ export const AdminPanel: React.FC = () => {
   }, [whatsappNumber]);
 
   // Dedicated Admin Login Form State
-  const [inputEmail, setInputEmail] = useState('admin2@dwellanddecor.ng');
-  const [inputPasscode, setInputPasscode] = useState('admin123');
+  const [inputEmail, setInputEmail] = useState('');
+  const [inputPasscode, setInputPasscode] = useState('');
   const [loginError, setLoginError] = useState('');
 
   const [activeTab, setActiveTab] = useState<'orders' | 'inventory' | 'add-product'>('inventory');
