@@ -26,8 +26,8 @@ import { handleImageError } from '../utils/imageHelper';
 const cozySunsetNeonImg = '/images/IMG-20260806-WA0188(1).jpg';
 const cyberSunsetRoomImg = '/images/IMG-20260806-WA0187.jpg';
 const neonFlexWaveImg = '/images/IMG-20260806-WA0128.jpg';
-const fairyLightBotanicalImg = '/images/IMG-20260806-WA0189.jpg';
-const popMusicWallImg = '/images/pop_music_wall.jpg';
+const fairyLightBotanicalImg = '/images/IMG-20260806-WA0128.jpg';
+const popMusicWallImg = '/images/IMG-20260806-WA0189.jpg';
 const ultimateDormGlowupImg = '/images/ultimate_dorm_glowup.jpg';
 
 interface ComboPackage {
