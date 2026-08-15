@@ -1103,16 +1103,25 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const deleteProduct = async (productId: string) => {
-    setProducts(prev => prev.filter(p => p.id !== productId));
-    // Remove from cart if present
-    setCart(prev => prev.filter(item => item.product.id !== productId));
-    showToast('Product deleted from store catalog', 'info');
+    const deleteProduct = async (productId: string) => {
+    // 1. Snapshot the state so we can undo if Firebase fails
+    const previousProducts = [...products];
+    const previousCart = [...cart];
 
+    // 2. Optimistically remove from UI
+    setProducts(prev => prev.filter(p => p.id !== productId));
+    setCart(prev => prev.filter(item => item.product.id !== productId));
+    
     try {
+      // 3. Tell Firebase to delete it
       await deleteProductFromFirestore(productId);
+      showToast('Product deleted from store catalog', 'success');
     } catch (e) {
-      console.warn('Failed to delete product from Firestore:', e);
+      // 4. IF FIRESTORE REJECTS IT: Rollback and warn the user
+      console.error('Failed to delete product from Firestore:', e);
+      setProducts(previousProducts);
+      setCart(previousCart);
+      showToast('Database Error: Permission denied to delete', 'warning');
     }
   };
 
@@ -1122,6 +1131,29 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       showToast('No out of stock products found', 'info');
       return;
     }
+
+    // 1. Snapshot the state
+    const previousProducts = [...products];
+    const previousCart = [...cart];
+
+    // 2. Optimistically remove from UI
+    setProducts(prev => prev.filter(p => p.inStock && p.stockCount > 0));
+    setCart(prev => prev.filter(item => item.product.inStock && item.product.stockCount > 0));
+    showToast(`Attempting to delete ${outOfStockIds.length} items...`, 'info');
+
+    try {
+      // 3. Delete all concurrently for better performance
+      await Promise.all(outOfStockIds.map(id => deleteProductFromFirestore(id)));
+      showToast(`Successfully removed ${outOfStockIds.length} out-of-stock items`, 'success');
+    } catch (e) {
+      // 4. Rollback on failure
+      console.error('Failed to batch delete products from Firestore:', e);
+      setProducts(previousProducts);
+      setCart(previousCart);
+      showToast('Database Error: Permission denied for batch delete', 'warning');
+    }
+  };
+
 
     setProducts(prev => prev.filter(p => p.inStock && p.stockCount > 0));
     setCart(prev => prev.filter(item => item.product.inStock && item.product.stockCount > 0));
