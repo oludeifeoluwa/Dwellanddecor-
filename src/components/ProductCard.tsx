@@ -11,11 +11,11 @@ interface ProductCardProps {
 export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
   const { formatPrice, addToCart, toggleWishlist, isInWishlist, selectProduct } = useShop();
 
-  const isLiked = isInWishlist(product.id);
+  const isLiked = typeof isInWishlist === 'function' ? isInWishlist(product.id) : false;
 
   return (
     <div 
-      onClick={() => selectProduct(product.id)}
+      onClick={() => typeof selectProduct === 'function' && selectProduct(product.id)}
       className="bg-white hover:bg-[#faf5f4] rounded-2xl p-4 border border-[#ebdcd8] hover:border-[#f09a8e] transition-all duration-300 shadow-2xs hover:shadow-md flex flex-col justify-between cursor-pointer group relative"
     >
       {/* Top Badges */}
@@ -47,7 +47,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            toggleWishlist(product.id);
+            typeof toggleWishlist === 'function' && toggleWishlist(product.id);
           }}
           className="w-8 h-8 rounded-full bg-white/90 shadow-xs border border-gray-100 flex items-center justify-center text-gray-500 hover:text-[#f09a8e] hover:bg-white transition"
           title={isLiked ? "Remove from wishlist" : "Add to wishlist"}
@@ -134,9 +134,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             disabled={!product.inStock || product.stockCount <= 0}
             onClick={(e) => {
               e.stopPropagation();
-              if (product.inStock && product.stockCount > 0) {
-                addToCart(product);
-              }
+              typeof addToCart === 'function' && product.inStock && product.stockCount > 0 && addToCart(product);
             }}
             className={`px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors ${
               !product.inStock || product.stockCount <= 0
