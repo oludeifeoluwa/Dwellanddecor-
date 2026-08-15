@@ -32,7 +32,8 @@ type ShopContextType = {
   toggleWishlist: (productId: string) => void;
 
   filters: FilterState;
-  setFilter: (f: Partial<FilterState> | ((prev: FilterState) => FilterState)) => void;
+  // Support both setFilter({ ... }) and setFilter('key', value) and functional updater
+  setFilter: (arg1: Partial<FilterState> | ((prev: FilterState) => FilterState) | keyof FilterState, arg2?: any) => void;
 
   // actions
   addCustomProduct: (p: Omit<Product, 'id'>) => void;
@@ -106,7 +107,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number>(0);
 
-  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [filters, _setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 
   useEffect(() => {
     try { localStorage.setItem(LS_PRODUCTS_KEY, JSON.stringify(products)); } catch (e) {}
@@ -160,9 +161,22 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showToast('Wishlist updated', 'info');
   };
 
-  // Filters
-  const setFilter = (f: Partial<FilterState> | ((prev: FilterState) => FilterState)) => {
-    setFilters(prev => typeof f === 'function' ? f(prev) : { ...prev, ...f });
+  // Filters - support multiple call styles to match existing callers
+  const setFilter = (arg1: Partial<FilterState> | ((prev: FilterState) => FilterState) | keyof FilterState, arg2?: any) => {
+    if (typeof arg1 === 'function') {
+      _setFilters(prev => (arg1 as (p: FilterState) => FilterState)(prev));
+      return;
+    }
+
+    if (typeof arg1 === 'string') {
+      // called as setFilter('category', 'led-lighting')
+      const key = arg1 as keyof FilterState;
+      _setFilters(prev => ({ ...prev, [key]: arg2 } as FilterState));
+      return;
+    }
+
+    // called with an object
+    _setFilters(prev => ({ ...prev, ...(arg1 as Partial<FilterState>) }));
   };
 
   const addCustomProduct = (p: Omit<Product, 'id'>) => {
