@@ -393,7 +393,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [currentUser?.id]);
 
   // Real-time Firestore Sync for Products Catalog
-  useEffect(() => {
+  /*useEffect(() => {
     // Auto-seed INITIAL_PRODUCTS to Firestore to ensure cloud database has latest image paths
     // Non-blocking: if Firebase fails, app still works with local data
     seedProductsToFirestore(INITIAL_PRODUCTS).catch(err => {
@@ -444,7 +444,45 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return updatedList;
         });
       }
+    });*/
+    // Real-time Firestore Sync for Products Catalog
+  useEffect(() => {
+    // 🚨 WARNING: seedProductsToFirestore has been removed for production. 
+    // Do not put it back, or it will resurrect deleted products and drain your Firebase quota!
+
+    const unsubscribeProducts = subscribeToRealtimeProducts((realtimeProducts) => {
+      // Removed `.length > 0` check so it can handle clearing the store down to 0 items
+      if (realtimeProducts) { 
+        setProducts(() => {
+          const initialImageMap = new Map(INITIAL_PRODUCTS.map(ip => [ip.id, ip]));
+
+          // Map over the database snapshot (realtimeProducts) instead of local state
+          return realtimeProducts.map(rp => {
+            const initItem = initialImageMap.get(rp.id);
+            const isCustomDataUrl = rp.image && (rp.image.startsWith('data:') || rp.image.startsWith('blob:'));
+            
+            let cleanImage = isCustomDataUrl ? rp.image : getCleanImageUrl(rp.image, rp.name);
+
+            // Preserve local HD images if this is a default product
+            if (initItem && !isCustomDataUrl) {
+              cleanImage = initItem.image;
+            }
+
+            return {
+              ...rp,
+              image: cleanImage,
+              additionalImages: initItem ? initItem.additionalImages : rp.additionalImages
+            };
+          });
+        });
+      }
     });
+
+    return () => {
+      if (unsubscribeProducts) unsubscribeProducts();
+    };
+  }, []);
+  
 
     return () => {
       if (unsubscribeProducts) unsubscribeProducts();
