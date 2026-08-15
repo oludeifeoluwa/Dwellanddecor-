@@ -1,15 +1,18 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { Product, Order, ProductCategory, AppNotification, UserAccount, CartItem, FilterState, ActiveTab } from '../types';
 import { INITIAL_PRODUCTS as sampleProducts } from '../data/products';
 
 type ShopContextType = {
   products: Product[];
+  filteredProducts: Product[];
   orders: Order[];
   currentUser: UserAccount | null;
   ownerRoomAddress: string;
   whatsappNumber: string;
   isManagerAuthenticated: boolean;
   adminEmail: string;
+  currency: 'NGN' | 'USD';
+  exchangeRateUSD: number;
 
   // cart & UI state
   cart: CartItem[];
@@ -113,6 +116,85 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [filters, _setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+
+  const currency: 'NGN' | 'USD' = 'NGN';
+  const exchangeRateUSD = 1500;
+
+  const resetFilters = () => {
+    _setFilters(DEFAULT_FILTERS);
+  };
+
+  const filteredProducts = useMemo(() => {
+    const query = filters.searchQuery.trim().toLowerCase();
+    let items = [...products];
+
+    if (filters.category !== 'all') {
+      items = items.filter(product => product.category === filters.category);
+    }
+
+    if (filters.onSaleOnly) {
+      items = items.filter(product => Boolean(product.isFlashDeal || product.flashDiscountPercent));
+    }
+
+    if (filters.inStockOnly) {
+      items = items.filter(product => product.inStock && Number(product.stockCount) > 0);
+    }
+
+    if (filters.minRating > 0) {
+      items = items.filter(product => Number(product.rating) >= Number(filters.minRating));
+    }
+
+    if (filters.selectedColors.length > 0) {
+      const selected = new Set(filters.selectedColors);
+      items = items.filter(product =>
+        product.colorOptions.some(color => selected.has(color.name))
+      );
+    }
+
+    if (query) {
+      items = items.filter(product => {
+        const haystack = [
+          product.name,
+          product.categoryName,
+          product.description,
+          product.shortDescription,
+          ...(product.tags || []),
+          ...(product.features || [])
+        ]
+          .join(' ')
+          .toLowerCase();
+
+        return haystack.includes(query);
+      });
+    }
+
+    items = items.filter(product => Number(product.priceUSD) <= Number(filters.maxPriceUSD));
+
+    switch (filters.sortBy) {
+      case 'price-low':
+        items.sort((a, b) => Number(a.priceUSD) - Number(b.priceUSD));
+        break;
+      case 'price-high':
+        items.sort((a, b) => Number(b.priceUSD) - Number(a.priceUSD));
+        break;
+      case 'rating':
+        items.sort((a, b) => Number(b.rating) - Number(a.rating));
+        break;
+      case 'newest':
+        items.sort((a, b) => Number(b.isNewArrival ? 1 : 0) - Number(a.isNewArrival ? 1 : 0));
+        break;
+      case 'featured':
+      default:
+        items.sort((a, b) => {
+          const aScore = (a.isBestSeller ? 3 : 0) + (a.isFlashDeal ? 2 : 0) + (a.isNewArrival ? 1 : 0);
+          const bScore = (b.isBestSeller ? 3 : 0) + (b.isFlashDeal ? 2 : 0) + (b.isNewArrival ? 1 : 0);
+          return bScore - aScore || Number(b.rating) - Number(a.rating);
+        });
+        break;
+    }
+
+    return items;
+  }, [products, filters]);
 
   useEffect(() => {
     try { localStorage.setItem(LS_PRODUCTS_KEY, JSON.stringify(products)); } catch (e) {}
@@ -297,12 +379,15 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value: ShopContextType = {
     products,
+    filteredProducts,
     orders,
     currentUser,
     ownerRoomAddress,
     whatsappNumber,
     isManagerAuthenticated,
     adminEmail,
+    currency,
+    exchangeRateUSD,
 
     cart,
     addToCart,
@@ -329,6 +414,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     filters,
     setFilter,
+    resetFilters,
 
     addCustomProduct,
     updateProductStock,
