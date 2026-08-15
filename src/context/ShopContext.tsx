@@ -204,40 +204,6 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const INITIAL_NOTIFICATIONS: AppNotification[] = [
     {
-      id: 'notif-1',
-      title: '📦 Order Dispatched & En Route!',
-      message: 'Your Cozy Sunset & Neon Butterfly Decor Package has been processed at Campus Hub and is heading to your hostel hall.',
-      type: 'order',
-      timestamp: '10 mins ago',
-      read: false,
-      linkTab: 'account'
-    },
-    {
-      id: 'notif-2',
-      title: '⚡ Student Flash Deal Active',
-      message: 'Exclusive 35% discount on DIY Flexible Neon Wave Lights & Golden Sunset Projection Lamps for students.',
-      type: 'deal',
-      timestamp: '1 hour ago',
-      read: false,
-      linkTab: 'shop'
-    },
-    {
-      id: 'notif-3',
-      title: '🎓 +150 Dwell Reward Points Earned!',
-      message: 'Points credited to your account! You qualify for a 15% student discount voucher on your next order.',
-      type: 'points',
-      timestamp: 'Yesterday',
-      read: true,
-      linkTab: 'account'
-    },
-    {
-      id: 'notif-4',
-      title: '🌿 AI Room Stylist Preset Ready',
-      message: 'Try our new Fairy Light Botanical Garden 3D room preview with trace-free Nano Tape installation guide.',
-      type: 'system',
-      timestamp: '2 days ago',
-      read: true,
-      linkTab: 'advisor'
     }
   ];
 
