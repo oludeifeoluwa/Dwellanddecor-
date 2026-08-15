@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { 
   Filter, 
   X, 
@@ -19,6 +19,7 @@ import { ProductCategory } from '../types';
 
 export const ProductGrid: React.FC = () => {
   const { 
+    products,
     filteredProducts, 
     filters, 
     setFilter, 
@@ -30,6 +31,19 @@ export const ProductGrid: React.FC = () => {
 
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
   const [gridCols, setGridCols] = useState<3 | 4>(3);
+
+  const catalogCategories = useMemo(() => {
+    const categoryCounts = new Map<string, number>();
+
+    products.forEach(product => {
+      categoryCounts.set(product.category, (categoryCounts.get(product.category) || 0) + 1);
+    });
+
+    return CATEGORIES.map(category => ({
+      ...category,
+      count: category.id === 'all' ? products.length : categoryCounts.get(category.id) || 0,
+    }));
+  }, [products]);
 
   const availableColors = [
     { name: 'Blush Pink', hex: '#ec4899' },
@@ -202,7 +216,7 @@ export const ProductGrid: React.FC = () => {
               Category
             </label>
             <div className="space-y-1">
-              {CATEGORIES.map(cat => (
+              {catalogCategories.map(cat => (
                 <button
                   key={cat.id}
                   onClick={() => setFilter('category', cat.id as ProductCategory)}
@@ -359,7 +373,7 @@ export const ProductGrid: React.FC = () => {
               <div className="py-4 border-b border-gray-100 space-y-2">
                 <label className="text-xs font-bold uppercase text-[#a37068]">Category</label>
                 <div className="space-y-1">
-                  {CATEGORIES.map(cat => (
+                  {catalogCategories.map(cat => (
                     <button
                       key={cat.id}
                       onClick={() => {
