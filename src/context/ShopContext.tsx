@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Product, Order, ProductCategory, AppNotification, UserAccount } from '../types';
-import sampleProducts from '../data/products';
+import { INITIAL_PRODUCTS as sampleProducts } from '../data/products';
 
 type ShopContextType = {
   products: Product[];
