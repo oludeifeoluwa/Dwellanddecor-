@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { Product, Order, ProductCategory, AppNotification, UserAccount } from '../types';
+import { Product, Order, ProductCategory, AppNotification, UserAccount, CartItem, FilterState, ActiveTab } from '../types';
 import { INITIAL_PRODUCTS as sampleProducts } from '../data/products';
 
 type ShopContextType = {
@@ -10,6 +10,29 @@ type ShopContextType = {
   whatsappNumber: string;
   isManagerAuthenticated: boolean;
   adminEmail: string;
+
+  // cart & UI state
+  cart: CartItem[];
+  addToCart: (item: CartItem) => void;
+  removeFromCart: (id: string) => void;
+  updateCartQuantity: (id: string, quantity: number) => void;
+  isCartOpen: boolean;
+  setIsCartOpen: (open: boolean) => void;
+  activeTab: ActiveTab;
+  setActiveTab: (tab: ActiveTab) => void;
+  isSearchOpen: boolean;
+  setIsSearchOpen: (open: boolean) => void;
+  isAuthModalOpen: boolean;
+  setIsAuthModalOpen: (open: boolean) => void;
+  isNotificationsOpen: boolean;
+  setIsNotificationsOpen: (open: boolean) => void;
+  unreadNotificationsCount: number;
+
+  wishlist: string[];
+  toggleWishlist: (productId: string) => void;
+
+  filters: FilterState;
+  setFilter: (f: Partial<FilterState> | ((prev: FilterState) => FilterState)) => void;
 
   // actions
   addCustomProduct: (p: Omit<Product, 'id'>) => void;
@@ -29,6 +52,19 @@ const ShopContext = createContext<ShopContextType | undefined>(undefined);
 const LS_PRODUCTS_KEY = 'hd_products_v2';
 const LS_ADMIN_KEY = 'hd_manager_authenticated_v2';
 const LS_ADMIN_EMAIL = 'hd_admin_email_v2';
+const LS_CART_KEY = 'hd_cart_v2';
+const LS_WISHLIST_KEY = 'hd_wishlist_v2';
+const DEFAULT_FILTERS: FilterState = {
+  category: 'all',
+  minPriceUSD: 0,
+  maxPriceUSD: 10000,
+  selectedColors: [],
+  inStockOnly: false,
+  onSaleOnly: false,
+  minRating: 0,
+  searchQuery: '',
+  sortBy: 'featured'
+};
 
 export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   // Load products from localStorage or fallback to provided sampleProducts
@@ -51,6 +87,27 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isManagerAuthenticated, setIsManagerAuthenticated] = useState<boolean>(localStorage.getItem(LS_ADMIN_KEY) === 'true');
   const [adminEmail, setAdminEmail] = useState<string>(localStorage.getItem(LS_ADMIN_EMAIL) || '');
 
+  // UI & cart state
+  const [cart, setCart] = useState<CartItem[]>(() => {
+    try {
+      const raw = localStorage.getItem(LS_CART_KEY);
+      if (raw) return JSON.parse(raw) as CartItem[];
+    } catch {}
+    return [];
+  });
+  const [wishlist, setWishlist] = useState<string[]>(() => {
+    try { const raw = localStorage.getItem(LS_WISHLIST_KEY); if (raw) return JSON.parse(raw) as string[]; } catch {};
+    return [];
+  });
+  const [isCartOpen, setIsCartOpen] = useState<boolean>(false);
+  const [activeTab, setActiveTab] = useState<ActiveTab>('shop');
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
+  const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number>(0);
+
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+
   useEffect(() => {
     try { localStorage.setItem(LS_PRODUCTS_KEY, JSON.stringify(products)); } catch (e) {}
   }, [products]);
@@ -60,19 +117,53 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (adminEmail) localStorage.setItem(LS_ADMIN_EMAIL, adminEmail);
   }, [isManagerAuthenticated, adminEmail]);
 
+  useEffect(() => {
+    try { localStorage.setItem(LS_CART_KEY, JSON.stringify(cart)); } catch (e) {}
+  }, [cart]);
+
+  useEffect(() => {
+    try { localStorage.setItem(LS_WISHLIST_KEY, JSON.stringify(wishlist)); } catch (e) {}
+  }, [wishlist]);
+
   const showToast = (message: string, type: 'success' | 'info' | 'warning' = 'success') => {
-    // Minimal toast: use window.alert for deployed convenience
-    // In-app UI also shows toasts from AdminPanel via showToast usage
-    // We'll still log to console
+    // Minimal toast: use console and optional UI hooks
     // eslint-disable-next-line no-console
     console.info(`[toast:${type}] ${message}`);
-    // Try to trigger in-app notification if available
-    try {
-      // no-op: AdminPanel reads showToast and triggers internal notification state
-    } catch (_) {}
   };
 
   const formatPrice = (amountNGN: number, _amountUSD?: number) => `₦${amountNGN.toLocaleString()}`;
+
+  // Cart helpers
+  const addToCart = (item: CartItem) => {
+    setCart(prev => {
+      const exists = prev.find(i => i.id === item.id);
+      if (exists) {
+        return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + item.quantity } : i);
+      }
+      return [item, ...prev];
+    });
+    showToast('Added to cart', 'success');
+  };
+
+  const removeFromCart = (id: string) => {
+    setCart(prev => prev.filter(i => i.id !== id));
+    showToast('Removed from cart', 'info');
+  };
+
+  const updateCartQuantity = (id: string, quantity: number) => {
+    setCart(prev => prev.map(i => i.id === id ? { ...i, quantity: Math.max(0, quantity) } : i));
+  };
+
+  // Wishlist
+  const toggleWishlist = (productId: string) => {
+    setWishlist(prev => prev.includes(productId) ? prev.filter(p => p !== productId) : [productId, ...prev]);
+    showToast('Wishlist updated', 'info');
+  };
+
+  // Filters
+  const setFilter = (f: Partial<FilterState> | ((prev: FilterState) => FilterState)) => {
+    setFilters(prev => typeof f === 'function' ? f(prev) : { ...prev, ...f });
+  };
 
   const addCustomProduct = (p: Omit<Product, 'id'>) => {
     const id = `custom-${Date.now().toString().slice(-6)}`;
@@ -86,25 +177,24 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showToast('Product stock updated', 'info');
   };
 
-  // Delete a single product (local only). Use optimistic update.
+  // Delete a single product (local + attempt Firestore)
   const deleteProduct = async (id: string) => {
     try {
       setProducts(prev => prev.filter(p => p.id !== id));
-      // If you had Firestore integration, you could call deleteDoc here. Repo has src/lib/firebase.ts export `db`.
-      // We'll attempt to call Firestore delete if db is available to keep backend in sync.
       try {
-        // dynamic import to avoid bundling issues
-        // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
         const { db } = require('../lib/firebase');
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const firestore = require('firebase/firestore');
         if (db && firestore && typeof firestore.deleteDoc === 'function') {
           const docRef = firestore.doc(db, 'products', id);
           await firestore.deleteDoc(docRef);
         }
       } catch (e) {
-        // ignore if firebase not available
+        // ignore
       }
+
+      // also remove from cart & wishlist
+      setCart(prev => prev.filter(ci => ci.product.id !== id));
+      setWishlist(prev => prev.filter(pid => pid !== id));
 
       showToast('Product removed from store', 'success');
     } catch (err) {
@@ -123,11 +213,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const remaining = products.filter(p => p.inStock && (!p.stockCount || p.stockCount > 0));
       setProducts(remaining);
 
-      // Try batch delete in Firestore if available
       try {
-        // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
         const { db } = require('../lib/firebase');
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const firestore = require('firebase/firestore');
         if (db && firestore && typeof firestore.writeBatch === 'function') {
           const batch = firestore.writeBatch(db);
@@ -137,6 +224,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } catch (e) {
         // ignore
       }
+
+      // clean cart & wishlist
+      const delIds = new Set(toDelete.map(d => d.id));
+      setCart(prev => prev.filter(ci => !delIds.has(ci.product.id)));
+      setWishlist(prev => prev.filter(pid => !delIds.has(pid)));
 
       showToast(`${toDelete.length} out-of-stock product(s) deleted`, 'success');
     } catch (err) {
@@ -181,6 +273,28 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     whatsappNumber,
     isManagerAuthenticated,
     adminEmail,
+
+    cart,
+    addToCart,
+    removeFromCart,
+    updateCartQuantity,
+    isCartOpen,
+    setIsCartOpen,
+    activeTab,
+    setActiveTab,
+    isSearchOpen,
+    setIsSearchOpen,
+    isAuthModalOpen,
+    setIsAuthModalOpen,
+    isNotificationsOpen,
+    setIsNotificationsOpen,
+    unreadNotificationsCount,
+
+    wishlist,
+    toggleWishlist,
+
+    filters,
+    setFilter,
 
     addCustomProduct,
     updateProductStock,
