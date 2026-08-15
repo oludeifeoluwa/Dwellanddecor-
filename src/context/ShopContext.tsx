@@ -13,6 +13,9 @@ type ShopContextType = {
   adminEmail: string;
   currency: 'NGN' | 'USD';
   exchangeRateUSD: number;
+  login: (email: string, password: string) => Promise<void>;
+  signup: (data: { fullName: string; email: string; university?: string; dormHall?: string; roomNumber?: string }, password: string) => Promise<void>;
+  loginWithGoogle: () => Promise<void>;
 
   // cart & UI state
   cart: CartItem[];
@@ -219,6 +222,68 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.info(`[toast:${type}] ${message}`);
   };
 
+  const login = async (email: string, password: string) => {
+    if (!email || !password) {
+      throw new Error('Email and password are required.');
+    }
+
+    const user: UserAccount = {
+      id: `demo-user-${Date.now()}`,
+      fullName: email.split('@')[0].replace(/[._-]/g, ' ') || 'Student user',
+      email,
+      university: 'Demo Campus',
+      dormHall: 'Demo Hall',
+      roomNumber: '101',
+      rewardPoints: 0,
+      isStudentVerified: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    setCurrentUser(user);
+    setIsAuthModalOpen(false);
+    showToast('Signed in successfully', 'success');
+  };
+
+  const signup = async (
+    data: { fullName: string; email: string; university?: string; dormHall?: string; roomNumber?: string },
+    password: string,
+  ) => {
+    if (!data?.email || !password) {
+      throw new Error('Email and password are required.');
+    }
+
+    const user: UserAccount = {
+      id: `demo-user-${Date.now()}`,
+      fullName: data.fullName || data.email.split('@')[0],
+      email: data.email,
+      university: data.university,
+      dormHall: data.dormHall,
+      roomNumber: data.roomNumber,
+      rewardPoints: 0,
+      isStudentVerified: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    setCurrentUser(user);
+    setIsAuthModalOpen(false);
+    showToast('Account created successfully', 'success');
+  };
+
+  const loginWithGoogle = async () => {
+    const user: UserAccount = {
+      id: `google-user-${Date.now()}`,
+      fullName: 'Google User',
+      email: 'google.user@example.com',
+      rewardPoints: 0,
+      isStudentVerified: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    setCurrentUser(user);
+    setIsAuthModalOpen(false);
+    showToast('Google sign-in demo activated', 'info');
+  };
+
   const formatPrice = (amountNGN: number, _amountUSD?: number) => `₦${amountNGN.toLocaleString()}`;
 
   // Cart helpers - accept either a CartItem or a Product (convenience)
@@ -388,6 +453,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     adminEmail,
     currency,
     exchangeRateUSD,
+    login,
+    signup,
+    loginWithGoogle,
 
     cart,
     addToCart,
