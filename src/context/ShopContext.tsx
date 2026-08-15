@@ -13,7 +13,7 @@ type ShopContextType = {
 
   // cart & UI state
   cart: CartItem[];
-  addToCart: (item: CartItem) => void;
+  addToCart: (item: CartItem | Product) => void;
   removeFromCart: (id: string) => void;
   updateCartQuantity: (id: string, quantity: number) => void;
   isCartOpen: boolean;
@@ -30,6 +30,10 @@ type ShopContextType = {
 
   wishlist: string[];
   toggleWishlist: (productId: string) => void;
+  isInWishlist: (productId: string) => boolean;
+
+  selectedProductId: string | null;
+  selectProduct: (id: string) => void;
 
   filters: FilterState;
   // Support both setFilter({ ... }) and setFilter('key', value) and functional updater
@@ -108,6 +112,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [unreadNotificationsCount, setUnreadNotificationsCount] = useState<number>(0);
 
   const [filters, _setFilters] = useState<FilterState>(DEFAULT_FILTERS);
+  const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
 
   useEffect(() => {
     try { localStorage.setItem(LS_PRODUCTS_KEY, JSON.stringify(products)); } catch (e) {}
@@ -134,14 +139,18 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const formatPrice = (amountNGN: number, _amountUSD?: number) => `₦${amountNGN.toLocaleString()}`;
 
-  // Cart helpers
-  const addToCart = (item: CartItem) => {
+  // Cart helpers - accept either a CartItem or a Product (convenience)
+  const addToCart = (item: CartItem | Product) => {
+    const cartItem: CartItem = ("product" in (item as any))
+      ? (item as CartItem)
+      : { id: (item as Product).id, product: item as Product, quantity: 1 };
+
     setCart(prev => {
-      const exists = prev.find(i => i.id === item.id);
+      const exists = prev.find(i => i.id === cartItem.id);
       if (exists) {
-        return prev.map(i => i.id === item.id ? { ...i, quantity: i.quantity + item.quantity } : i);
+        return prev.map(i => i.id === cartItem.id ? { ...i, quantity: i.quantity + cartItem.quantity } : i);
       }
-      return [item, ...prev];
+      return [cartItem, ...prev];
     });
     showToast('Added to cart', 'success');
   };
@@ -161,6 +170,8 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showToast('Wishlist updated', 'info');
   };
 
+  const isInWishlist = (productId: string) => wishlist.includes(productId);
+
   // Filters - support multiple call styles to match existing callers
   const setFilter = (arg1: Partial<FilterState> | ((prev: FilterState) => FilterState) | keyof FilterState, arg2?: any) => {
     if (typeof arg1 === 'function') {
@@ -177,6 +188,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // called with an object
     _setFilters(prev => ({ ...prev, ...(arg1 as Partial<FilterState>) }));
+  };
+
+  const selectProduct = (id: string) => {
+    setSelectedProductId(id);
+    setActiveTab('product-detail');
   };
 
   const addCustomProduct = (p: Omit<Product, 'id'>) => {
@@ -306,6 +322,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     wishlist,
     toggleWishlist,
+    isInWishlist,
+
+    selectedProductId,
+    selectProduct,
 
     filters,
     setFilter,
