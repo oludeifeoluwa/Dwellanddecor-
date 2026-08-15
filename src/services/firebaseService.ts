@@ -232,13 +232,12 @@ export const subscribeToRealtimeProducts = (onProductsUpdated: (products: Produc
   try {
     const productsCol = collection(db, 'products');
     return onSnapshot(productsCol, (snapshot) => {
-      if (!snapshot.empty) {
-        const prods: Product[] = [];
-        snapshot.forEach((doc) => {
-          prods.push(doc.data() as Product);
-        });
-        onProductsUpdated(prods);
-      }
+      // Always construct the products array (may be empty) and notify listeners
+      const prods: Product[] = [];
+      snapshot.forEach((doc) => {
+        prods.push(doc.data() as Product);
+      });
+      onProductsUpdated(prods);
     }, (error) => {
       console.warn('Firestore products listener info:', error.message);
     });
@@ -262,6 +261,8 @@ export const deleteProductFromFirestore = async (productId: string): Promise<voi
     await deleteDoc(pRef);
   } catch (e) {
     console.warn('Failed to delete product from Firestore:', e);
+    // Re-throw so callers can handle rollback/notify
+    throw e;
   }
 };
 
