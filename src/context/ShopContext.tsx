@@ -524,7 +524,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }, [currentUser]);
 
-  const login = async (email: string, password = 'password123'): Promise<boolean> => {
+/*  const login = async (email: string, password = 'password123'): Promise<boolean> => {
     try {
       let fbUser;
       try {
@@ -665,6 +665,68 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
             break;
           case 'auth/invalid-email':
             errorMessage = 'Invalid email address format.';
+            break;
+          default:
+            errorMessage = err.code.replace('auth/', '').replace(/-/g, ' ');
+        }
+      } else if (err?.message) {
+        errorMessage = err.message;
+      }
+      showToast(`Sign In Notice: ${errorMessage}`, 'warning');
+      throw new Error(errorMessage);
+    }
+  };
+*/
+  const login = async (email: string, password = 'password123'): Promise<boolean> => {
+    try {
+      // 1. Authenticate strictly with Firebase Auth
+      const fbUser = await loginUser(email, password);
+
+      // 2. Fetch user profile from Firestore
+      let profile = null;
+      try {
+        profile = await fetchUserProfile(fbUser.uid);
+      } catch {
+        // Proceed with defaults if profile fetch fails
+      }
+
+      const userObj: UserAccount = {
+        id: fbUser.uid,
+        fullName: profile?.fullName || fbUser.displayName || email.split('@')[0].toUpperCase(),
+        email: email,
+        phone: profile?.phone || '+234 812 345 6789',
+        university: profile?.university || 'Main University Campus',
+        dormHall: profile?.dormHall || 'Hostel Hall A',
+        roomNumber: profile?.roomNumber || 'Room 201',
+        address: `${profile?.dormHall || 'Campus Hostel'}, ${profile?.roomNumber || 'Room 101'}`,
+        city: 'Lagos',
+        state: 'Lagos State',
+        rewardPoints: profile?.points || 150,
+        isStudentVerified: true,
+        avatarUrl: '/images/detachable_cat_mirror.jpg',
+        createdAt: profile?.createdAt || new Date().toISOString()
+      };
+
+      setCurrentUser(userObj);
+      setIsAuthModalOpen(false);
+      showToast(`Signed in as ${userObj.fullName}!`, 'success');
+      return true;
+    } catch (err: any) {
+      console.error('Firebase Login Error:', err);
+      let errorMessage = 'Authentication failed';
+      if (err?.code) {
+        switch (err.code) {
+          case 'auth/wrong-password':
+            errorMessage = 'Incorrect password. Please verify your password.';
+            break;
+          case 'auth/invalid-credential':
+            errorMessage = 'Invalid email or password.';
+            break;
+          case 'auth/user-not-found':
+            errorMessage = 'No account found with this email.';
+            break;
+          case 'auth/too-many-requests':
+            errorMessage = 'Too many failed login attempts. Please try again later.';
             break;
           default:
             errorMessage = err.code.replace('auth/', '').replace(/-/g, ' ');
