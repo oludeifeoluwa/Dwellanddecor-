@@ -2,7 +2,7 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 import { getStorage } from "firebase/storage";
-
+import { sendPasswordResetEmail } from "firebase/auth";
 // Vite uses import.meta.env instead of process.env
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
@@ -21,3 +21,6 @@ const auth = getAuth(app);
 const storage = getStorage(app);
 
 export { app, db, auth, storage };
+export const resetUserPassword = async (email: string) => {
+  return await sendPasswordResetEmail(auth, email);
+};
