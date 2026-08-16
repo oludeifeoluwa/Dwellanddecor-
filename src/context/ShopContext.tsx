@@ -691,8 +691,14 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setProducts(prev => prev.filter(p => p.id !== id));
       if (selectedProductId === id) setSelectedProductId(null);
 
-      if (db) {
-        await deleteDoc(doc(db, 'products', id));
+      if (auth?.currentUser && db) {
+        try {
+          await deleteDoc(doc(db, 'products', id));
+        } catch (firestoreDeleteError) {
+          console.warn('Firestore product delete permission denied or write failed; local product state was still updated.', firestoreDeleteError);
+        }
+      } else {
+        console.warn('Firestore delete skipped: no authenticated Firebase user. Product removed locally only.');
       }
 
       setCart(prev => prev.filter(ci => ci.product.id !== id));
@@ -719,12 +725,18 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const remaining = products.filter(p => p.inStock && (!p.stockCount || p.stockCount > 0));
       setProducts(remaining);
 
-      if (db && toDelete.length > 0) {
-        const batch = writeBatch(db);
-        toDelete.forEach(pd => {
-          batch.delete(doc(db, 'products', pd.id));
-        });
-        await batch.commit();
+      if (auth?.currentUser && db && toDelete.length > 0) {
+        try {
+          const batch = writeBatch(db);
+          toDelete.forEach(pd => {
+            batch.delete(doc(db, 'products', pd.id));
+          });
+          await batch.commit();
+        } catch (firestoreBulkDeleteError) {
+          console.warn('Firestore bulk delete failed; local product state was still updated.', firestoreBulkDeleteError);
+        }
+      } else {
+        console.warn('Firestore bulk delete skipped: no authenticated Firebase user. Product removal stayed local.');
       }
 
       // clean cart & wishlist

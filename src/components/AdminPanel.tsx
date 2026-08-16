@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { createUserWithEmailAndPassword, signInWithEmailAndPassword } from 'firebase/auth';
 import { 
   Settings, 
   Package, 
@@ -35,6 +36,7 @@ import {
   Printer
 } from 'lucide-react';
 import { useShop } from '../context/ShopContext';
+import { auth } from '../lib/firebase';
 import { ProductCategory } from '../types';
 import { printReceiptPDF } from '../utils/receiptPrinter';
 import { handleImageError, getCleanImageUrl } from '../utils/imageHelper';
@@ -188,7 +190,7 @@ export const AdminPanel: React.FC = () => {
     'dabohtoluwalase@gmail.com'
   ];
 
-  const handleManagerLogin = (e: React.FormEvent) => {
+  const handleManagerLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
 
@@ -200,21 +202,36 @@ export const AdminPanel: React.FC = () => {
     }
 
     const isAdminEmailDomain = cleanEmail.endsWith('@gmail.com');
-    const isExplicitAdminEmail = ALLOWED_ADMIN_EMAILS.includes(cleanEmail) ;
+    const isExplicitAdminEmail = ALLOWED_ADMIN_EMAILS.includes(cleanEmail);
 
     if (!isAdminEmailDomain && !isExplicitAdminEmail) {
       setLoginError('Access Denied.');
       return;
     }
 
-    if (inputPasscode !== 'Ololade2k_%' && inputPasscode.length < 4) {
-      setLoginError('Invalid Admin Passcode.');
+    if (!auth) {
+      setLoginError('Firebase Auth is not configured.');
       return;
     }
 
-    const effectiveEmail = cleanEmail.includes('@') ? cleanEmail : 'error';
-    authenticateAdmin(effectiveEmail);
-    setLoginError('');
+    try {
+      try {
+        await signInWithEmailAndPassword(auth, cleanEmail, inputPasscode);
+      } catch (signInError: any) {
+        if (signInError?.code === 'auth/user-not-found') {
+          await createUserWithEmailAndPassword(auth, cleanEmail, inputPasscode);
+        } else {
+          throw signInError;
+        }
+      }
+
+      const effectiveEmail = cleanEmail.includes('@') ? cleanEmail : 'error';
+      authenticateAdmin(effectiveEmail);
+      setLoginError('');
+    } catch (error: any) {
+      const message = error?.code ? error.code.replace('auth/', '').replace(/-/g, ' ') : (error?.message || 'Authentication failed');
+      setLoginError(`Admin sign-in failed: ${message}`);
+    }
   };
 
   const handleManagerLogout = () => {
