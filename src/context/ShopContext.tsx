@@ -188,6 +188,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isPaystackOpen, setIsPaystackOpen] = useState<boolean>(false);
   const [pendingCheckoutOrder, setPendingCheckoutOrder] = useState<Order | null>(null);
 
+  const ALLOWED_ADMIN_EMAILS = ['toluwalasedaboh65@gmail.com', 'dabohtoluwalase@gmail.com'];
+  const normalizeEmail = (email: string = '') => email.trim().toLowerCase();
+  const isAllowedAdminEmail = (email: string = '') => ALLOWED_ADMIN_EMAILS.includes(normalizeEmail(email));
+
   const currency: 'NGN' | 'USD' = 'NGN';
   const exchangeRateUSD = 1500;
   const selectedProduct = useMemo(() => products.find(p => p.id === selectedProductId) ?? null, [products, selectedProductId]);
@@ -272,6 +276,44 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     try { localStorage.setItem(LS_PRODUCTS_KEY, JSON.stringify(products)); } catch (e) {}
   }, [products]);
+
+  useEffect(() => {
+    const handleStorageChange = (event: StorageEvent) => {
+      if (!event.key) return;
+
+      try {
+        if (event.key === LS_PRODUCTS_KEY && event.newValue) {
+          const next = JSON.parse(event.newValue) as Product[];
+          setProducts(next);
+        }
+        if (event.key === 'hd_orders_v2' && event.newValue) {
+          const next = JSON.parse(event.newValue) as Order[];
+          setOrders(next);
+        }
+        if (event.key === 'hd_reviews_v2' && event.newValue) {
+          const next = JSON.parse(event.newValue) as Review[];
+          setReviews(next);
+        }
+        if (event.key === LS_WISHLIST_KEY && event.newValue) {
+          const next = JSON.parse(event.newValue) as string[];
+          setWishlist(next);
+        }
+        if (event.key === LS_CART_KEY && event.newValue) {
+          const next = JSON.parse(event.newValue) as CartItem[];
+          setCart(next);
+        }
+        if (event.key === 'hd_notifications_v2' && event.newValue) {
+          const next = JSON.parse(event.newValue) as AppNotification[];
+          setNotifications(next);
+        }
+      } catch {
+        // ignore invalid localStorage payloads
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   useEffect(() => {
     try { localStorage.setItem('hd_orders_v2', JSON.stringify(orders)); } catch (e) {}
@@ -431,6 +473,14 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setCurrentUser(user);
       setIsAuthModalOpen(false);
+
+      if (isAllowedAdminEmail(user.email)) {
+        setIsManagerAuthenticated(true);
+        setAdminEmail(user.email);
+        localStorage.setItem(LS_ADMIN_KEY, 'true');
+        localStorage.setItem(LS_ADMIN_EMAIL, user.email);
+      }
+
       showToast(`Signed in with Google as ${user.fullName}`, 'success');
     } catch (error: any) {
       console.error('Google sign-in failed', error);
@@ -690,10 +740,16 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const authenticateAdmin = (email: string) => {
+    const cleanEmail = normalizeEmail(email);
+    if (!isAllowedAdminEmail(cleanEmail)) {
+      showToast('Access denied: this account is not an allowed admin email.', 'warning');
+      return;
+    }
+
     setIsManagerAuthenticated(true);
-    setAdminEmail(email);
+    setAdminEmail(cleanEmail);
     localStorage.setItem(LS_ADMIN_KEY, 'true');
-    localStorage.setItem(LS_ADMIN_EMAIL, email);
+    localStorage.setItem(LS_ADMIN_EMAIL, cleanEmail);
     showToast('Admin authenticated', 'success');
   };
 
