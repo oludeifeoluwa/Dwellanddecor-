@@ -352,6 +352,30 @@ export const RoomDecorAdvisor: React.FC = () => {
         </div>
       </div>
 
+      {/* AI STYLIST DISCLAIMER BOX */}
+      <div className="bg-blue-50 border border-blue-300 rounded-2xl p-4 sm:p-5 flex items-start gap-3.5 shadow-2xs">
+        <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 flex items-center justify-center shrink-0 mt-0.5 font-bold">
+          <Lightbulb className="w-6 h-6 text-blue-600" />
+        </div>
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <h4 className="font-bold text-xs uppercase tracking-wider text-blue-900">
+              AI Suggestions Disclaimer
+            </h4>
+            <span className="text-[10px] bg-blue-200 text-blue-900 px-2 py-0.5 rounded-full font-bold">
+              For Reference Only
+            </span>
+          </div>
+          <p className="text-xs text-blue-800 leading-relaxed">
+            <strong>These are AI-generated suggestions</strong> and may vary based on your personal taste, budget, room size, and hostel policies. For personalized room styling advice, detailed product recommendations, or custom combo options,{' '}
+            <a href="https://wa.me/2348123456789?text=Hi%20Dwell%20&%20Decor!%20I%20need%20personalized%20room%20styling%20advice." target="_blank" rel="noopener noreferrer" className="font-bold text-blue-700 hover:text-blue-900 underline">
+              contact us on WhatsApp
+            </a>
+            .
+          </p>
+        </div>
+      </div>
+
       {/* SECTION 1: CURATED ROOM COMBO PACKAGES */}
       <div id="combo-packages" className="space-y-6">
         

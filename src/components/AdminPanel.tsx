@@ -225,6 +225,15 @@ export const AdminPanel: React.FC = () => {
         }
       }
 
+      // Wait a moment for Firebase auth state to fully propagate
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Verify Firebase user is actually authenticated
+      if (!auth.currentUser) {
+        throw new Error('Firebase authentication did not complete properly. Please try again.');
+      }
+
+      console.debug(`[Admin Auth] Firebase user signed in: ${auth.currentUser.uid}`);
       const effectiveEmail = cleanEmail.includes('@') ? cleanEmail : 'error';
       authenticateAdmin(effectiveEmail);
       setLoginError('');

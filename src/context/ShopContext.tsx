@@ -688,18 +688,34 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   // Delete a single product locally and permanently from Firestore
   const deleteProduct = async (id: string) => {
     try {
+      // Check auth state before proceeding
+      if (!auth?.currentUser) {
+        console.error('[Delete] No authenticated Firebase user. Admin must be logged in with Firebase Auth.');
+        showToast('Admin login required to delete from store. Please sign in again.', 'warning');
+        return;
+      }
+
+      if (!db) {
+        console.error('[Delete] Firestore not initialized');
+        showToast('Database connection error. Please refresh and try again.', 'warning');
+        return;
+      }
+
+      console.debug(`[Delete] Starting Firebase delete for product ${id} by user ${auth.currentUser.uid}`);
+
+      // Remove from Firestore first (before local state)
+      try {
+        await deleteDoc(doc(db, 'products', id));
+        console.debug(`[Delete] Successfully deleted product ${id} from Firestore`);
+      } catch (firestoreDeleteError: any) {
+        console.error('[Delete] Firestore delete failed:', firestoreDeleteError);
+        showToast(`Delete failed: ${firestoreDeleteError?.message || 'Permission denied'}. Check your admin access.`, 'warning');
+        return;
+      }
+
+      // Only update local state after Firestore delete succeeds
       setProducts(prev => prev.filter(p => p.id !== id));
       if (selectedProductId === id) setSelectedProductId(null);
-
-      if (auth?.currentUser && db) {
-        try {
-          await deleteDoc(doc(db, 'products', id));
-        } catch (firestoreDeleteError) {
-          console.warn('Firestore product delete permission denied or write failed; local product state was still updated.', firestoreDeleteError);
-        }
-      } else {
-        console.warn('Firestore delete skipped: no authenticated Firebase user. Product removed locally only.');
-      }
 
       setCart(prev => prev.filter(ci => ci.product.id !== id));
       setWishlist(prev => prev.filter(pid => pid !== id));
@@ -708,9 +724,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...prev,
       ]);
 
-      showToast('Product removed from store', 'success');
+      showToast('✓ Product deleted from store and Firestore', 'success');
     } catch (err) {
-      console.error('deleteProduct error', err);
+      console.error('[Delete] Unexpected error:', err);
       showToast('Failed to delete product', 'warning');
     }
   };
@@ -766,6 +782,11 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const deauthenticateAdmin = () => {
+    // Sign out from Firebase
+    if (auth) {
+      void firebaseSignOut(auth);
+    }
+    
     setIsManagerAuthenticated(false);
     setAdminEmail('');
     localStorage.removeItem(LS_ADMIN_KEY);
