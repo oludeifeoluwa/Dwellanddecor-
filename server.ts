@@ -8,7 +8,12 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const DEFAULT_PORT = Number(process.env.PORT || 3000);
+
+const resolvePort = (port: number): number => {
+  if (!Number.isInteger(port) || port <= 0) return 3000;
+  return port;
+};
 
 app.use(express.json());
 
@@ -166,10 +171,26 @@ async function startServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`🏠 Home & Decor Server running on http://localhost:${PORT}`);
-    console.log(`📸 Test images: http://localhost:${PORT}/api/test-images`);
-  });
+  const startOnPort = (port: number) => {
+    const server = app.listen(port, "0.0.0.0", () => {
+      console.log(`🏠 Home & Decor Server running on http://localhost:${port}`);
+      console.log(`📸 Test images: http://localhost:${port}/api/test-images`);
+    });
+
+    server.on("error", (err: NodeJS.ErrnoException) => {
+      if (err.code === "EADDRINUSE") {
+        const fallbackPort = resolvePort(port + 1);
+        console.warn(`Port ${port} is busy, retrying on ${fallbackPort}...`);
+        startOnPort(fallbackPort);
+        return;
+      }
+
+      console.error("Server startup error:", err);
+      process.exit(1);
+    });
+  };
+
+  startOnPort(resolvePort(DEFAULT_PORT));
 }
 
 startServer();
