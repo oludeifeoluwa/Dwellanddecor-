@@ -1,5 +1,12 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut as firebaseSignOut } from 'firebase/auth';
+import {
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  onAuthStateChanged,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+} from 'firebase/auth';
 import { deleteDoc, doc, writeBatch } from 'firebase/firestore';
 import { Product, Order, ProductCategory, AppNotification, UserAccount, CartItem, FilterState, ActiveTab, CustomerInfo, Review } from '../types';
 import { INITIAL_PRODUCTS as sampleProducts } from '../data/products';
@@ -311,21 +318,33 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error('Email and password are required.');
     }
 
-    const user: UserAccount = {
-      id: `demo-user-${Date.now()}`,
-      fullName: email.split('@')[0].replace(/[._-]/g, ' ') || 'Student user',
-      email,
-      university: 'Demo Campus',
-      dormHall: 'Demo Hall',
-      roomNumber: '101',
-      rewardPoints: 0,
-      isStudentVerified: true,
-      createdAt: new Date().toISOString(),
-    };
+    if (!auth) {
+      throw new Error('Firebase Auth is not configured.');
+    }
 
-    setCurrentUser(user);
-    setIsAuthModalOpen(false);
-    showToast('Signed in successfully', 'success');
+    try {
+      const result = await signInWithEmailAndPassword(auth, email, password);
+      const firebaseUser = result.user;
+      const user: UserAccount = {
+        id: firebaseUser.uid,
+        fullName: firebaseUser.displayName || firebaseUser.email?.split('@')[0]?.replace(/[._-]/g, ' ') || 'Student user',
+        email: firebaseUser.email || email,
+        university: 'Demo Campus',
+        dormHall: 'Demo Hall',
+        roomNumber: '101',
+        rewardPoints: 0,
+        isStudentVerified: true,
+        createdAt: firebaseUser.metadata?.creationTime || new Date().toISOString(),
+      };
+
+      setCurrentUser(user);
+      setIsAuthModalOpen(false);
+      showToast('Signed in successfully', 'success');
+    } catch (error: any) {
+      const message = error?.message || 'Login failed.';
+      showToast(message, 'warning');
+      throw error;
+    }
   };
 
   const signup = async (
@@ -336,21 +355,33 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       throw new Error('Email and password are required.');
     }
 
-    const user: UserAccount = {
-      id: `demo-user-${Date.now()}`,
-      fullName: data.fullName || data.email.split('@')[0],
-      email: data.email,
-      university: data.university,
-      dormHall: data.dormHall,
-      roomNumber: data.roomNumber,
-      rewardPoints: 0,
-      isStudentVerified: true,
-      createdAt: new Date().toISOString(),
-    };
+    if (!auth) {
+      throw new Error('Firebase Auth is not configured.');
+    }
 
-    setCurrentUser(user);
-    setIsAuthModalOpen(false);
-    showToast('Account created successfully', 'success');
+    try {
+      const result = await createUserWithEmailAndPassword(auth, data.email, password);
+      const firebaseUser = result.user;
+      const user: UserAccount = {
+        id: firebaseUser.uid,
+        fullName: data.fullName || firebaseUser.email?.split('@')[0]?.replace(/[._-]/g, ' ') || 'Student user',
+        email: firebaseUser.email || data.email,
+        university: data.university,
+        dormHall: data.dormHall,
+        roomNumber: data.roomNumber,
+        rewardPoints: 0,
+        isStudentVerified: true,
+        createdAt: firebaseUser.metadata?.creationTime || new Date().toISOString(),
+      };
+
+      setCurrentUser(user);
+      setIsAuthModalOpen(false);
+      showToast('Account created successfully', 'success');
+    } catch (error: any) {
+      const message = error?.message || 'Registration failed.';
+      showToast(message, 'warning');
+      throw error;
+    }
   };
 
   useEffect(() => {
