@@ -7,7 +7,7 @@ import {
   signInWithPopup,
   signOut as firebaseSignOut,
 } from 'firebase/auth';
-import { deleteDoc, doc, writeBatch } from 'firebase/firestore';
+import { collection, deleteDoc, doc, getDoc, getDocs, onSnapshot, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
 import { Product, Order, ProductCategory, AppNotification, UserAccount, CartItem, FilterState, ActiveTab, CustomerInfo, Review } from '../types';
 import { INITIAL_PRODUCTS as sampleProducts } from '../data/products';
 import { auth, db } from '../lib/firebase';
@@ -79,6 +79,7 @@ type ShopContextType = {
 
   // actions
   addCustomProduct: (p: Omit<Product, 'id'>) => void;
+  syncCatalogToFirestore: () => Promise<void>;
   updateProductStock: (id: string, stockCount: number, inStock?: boolean) => void;
   deleteProduct: (id: string) => Promise<void>;
   deleteAllOutOfStockProducts: () => Promise<void>;
@@ -276,6 +277,42 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     try { localStorage.setItem(LS_PRODUCTS_KEY, JSON.stringify(products)); } catch (e) {}
   }, [products]);
+
+  // Once the catalog has been initialized in Firestore, it becomes the source
+  // of truth for every browser. Until then, the bundled/local catalog remains
+  // available so the admin can use the one-time initialization action below.
+  useEffect(() => {
+    let unsubscribe: (() => void) | undefined;
+    let cancelled = false;
+
+    const connectFirestoreCatalog = async () => {
+      try {
+        const catalogConfig = await getDoc(doc(db, 'catalog', 'config'));
+        const isFirestoreCatalogInitialized = catalogConfig.exists();
+        if (cancelled) return;
+
+        unsubscribe = onSnapshot(
+          collection(db, 'products'),
+          (snapshot) => {
+            // A non-empty collection is safe to use immediately. An empty
+            // collection is only authoritative after initialization, so a new
+            // project does not accidentally hide the bundled products.
+            if (!isFirestoreCatalogInitialized && snapshot.empty) return;
+            setProducts(snapshot.docs.map(entry => ({ id: entry.id, ...entry.data() } as Product)));
+          },
+          (error) => console.error('[Catalog] Firestore listener failed:', error)
+        );
+      } catch (error) {
+        console.error('[Catalog] Firestore setup failed:', error);
+      }
+    };
+
+    void connectFirestoreCatalog();
+    return () => {
+      cancelled = true;
+      unsubscribe?.();
+    };
+  }, []);
 
   useEffect(() => {
     const handleStorageChange = (event: StorageEvent) => {
@@ -596,11 +633,56 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const id = `custom-${Date.now().toString().slice(-6)}`;
     const newP: Product = { ...p, id } as Product;
     setProducts(prev => [newP, ...prev]);
+    if (auth.currentUser) {
+      void setDoc(doc(db, 'products', id), newP).catch(error => {
+        console.error('[Catalog] Failed to create product in Firestore:', error);
+        showToast('Product added locally, but cloud sync failed.', 'warning');
+      });
+    }
     showToast('Custom product added', 'success');
   };
 
+  // Run once, from the admin panel, to publish the existing bundled catalog.
+  // It refuses to overwrite an existing Firestore catalog.
+  const syncCatalogToFirestore = async () => {
+    if (!auth.currentUser) {
+      showToast('Sign in as an admin before initializing Firestore.', 'warning');
+      return;
+    }
+
+    const catalogConfigRef = doc(db, 'catalog', 'config');
+    const existingConfig = await getDoc(catalogConfigRef);
+    if (existingConfig.exists()) {
+      showToast('Firestore catalog is already initialized.', 'info');
+      return;
+    }
+
+    const existingProducts = await getDocs(collection(db, 'products'));
+    if (!existingProducts.empty) {
+      showToast('Firestore already contains products; initialization was skipped.', 'info');
+      return;
+    }
+
+    const batch = writeBatch(db);
+    products.forEach(product => batch.set(doc(db, 'products', product.id), product));
+    batch.set(catalogConfigRef, {
+      initializedAt: new Date().toISOString(),
+      initializedBy: auth.currentUser.uid,
+      productCount: products.length,
+    });
+    await batch.commit();
+    showToast(`${products.length} products published to Firestore.`, 'success');
+  };
+
   const updateProductStock = (id: string, stockCount: number, inStock?: boolean) => {
-    setProducts(prev => prev.map(p => p.id === id ? { ...p, stockCount, inStock: typeof inStock === 'boolean' ? inStock : stockCount > 0 } : p));
+    const nextInStock = typeof inStock === 'boolean' ? inStock : stockCount > 0;
+    setProducts(prev => prev.map(p => p.id === id ? { ...p, stockCount, inStock: nextInStock } : p));
+    if (auth.currentUser) {
+      void updateDoc(doc(db, 'products', id), { stockCount, inStock: nextInStock }).catch(error => {
+        console.error('[Catalog] Failed to update stock in Firestore:', error);
+        showToast('Stock updated locally, but cloud sync failed.', 'warning');
+      });
+    }
     showToast('Product stock updated', 'info');
   };
 
@@ -685,38 +767,27 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     showToast('Payment confirmed! Order placed successfully.', 'success');
   };
 
-  // Delete a single product locally and permanently from Firestore
+  // Firestore is the catalog source of truth. Do not remove a product locally
+  // until Firestore confirms the deletion; otherwise a permission or network
+  // failure looks like a successful deletion until the page is refreshed.
   const deleteProduct = async (id: string) => {
     try {
-      // Check auth state before proceeding
-      if (!auth?.currentUser) {
-        console.error('[Delete] No authenticated Firebase user. Admin must be logged in with Firebase Auth.');
-        showToast('Admin login required to delete from store. Please sign in again.', 'warning');
+      if (!products.some(product => product.id === id)) {
+        showToast('This product is no longer in the catalog.', 'info');
         return;
       }
 
-      if (!db) {
-        console.error('[Delete] Firestore not initialized');
-        showToast('Database connection error. Please refresh and try again.', 'warning');
-        return;
+      const email = auth.currentUser?.email || '';
+      if (!auth.currentUser || !isAllowedAdminEmail(email)) {
+        throw new Error('Sign in to Firebase with an authorized admin account before deleting products.');
       }
 
-      console.debug(`[Delete] Starting Firebase delete for product ${id} by user ${auth.currentUser.uid}`);
+      // Refresh the token so Firestore receives the current Firebase Auth state.
+      await auth.currentUser.getIdToken(true);
+      await deleteDoc(doc(db, 'products', id));
 
-      // Remove from Firestore first (before local state)
-      try {
-        await deleteDoc(doc(db, 'products', id));
-        console.debug(`[Delete] Successfully deleted product ${id} from Firestore`);
-      } catch (firestoreDeleteError: any) {
-        console.error('[Delete] Firestore delete failed:', firestoreDeleteError);
-        showToast(`Delete failed: ${firestoreDeleteError?.message || 'Permission denied'}. Check your admin access.`, 'warning');
-        return;
-      }
-
-      // Only update local state after Firestore delete succeeds
       setProducts(prev => prev.filter(p => p.id !== id));
       if (selectedProductId === id) setSelectedProductId(null);
-
       setCart(prev => prev.filter(ci => ci.product.id !== id));
       setWishlist(prev => prev.filter(pid => pid !== id));
       setNotifications(prev => [
@@ -724,10 +795,10 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         ...prev,
       ]);
 
-      showToast('✓ Product deleted from store and Firestore', 'success');
-    } catch (err) {
+      showToast('Product deleted from Firestore', 'success');
+    } catch (err: any) {
       console.error('[Delete] Unexpected error:', err);
-      showToast('Failed to delete product', 'warning');
+      showToast(`Firebase did not delete this product: ${err?.message || 'unknown error'}`, 'warning');
     }
   };
 
@@ -738,22 +809,18 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
         showToast('No out-of-stock products to delete', 'info');
         return;
       }
+      const email = auth.currentUser?.email || '';
+      if (!auth.currentUser || !isAllowedAdminEmail(email)) {
+        throw new Error('Sign in to Firebase with an authorized admin account before deleting products.');
+      }
+
+      await auth.currentUser.getIdToken(true);
+      const batch = writeBatch(db);
+      toDelete.forEach(product => batch.delete(doc(db, 'products', product.id)));
+      await batch.commit();
+
       const remaining = products.filter(p => p.inStock && (!p.stockCount || p.stockCount > 0));
       setProducts(remaining);
-
-      if (auth?.currentUser && db && toDelete.length > 0) {
-        try {
-          const batch = writeBatch(db);
-          toDelete.forEach(pd => {
-            batch.delete(doc(db, 'products', pd.id));
-          });
-          await batch.commit();
-        } catch (firestoreBulkDeleteError) {
-          console.warn('Firestore bulk delete failed; local product state was still updated.', firestoreBulkDeleteError);
-        }
-      } else {
-        console.warn('Firestore bulk delete skipped: no authenticated Firebase user. Product removal stayed local.');
-      }
 
       // clean cart & wishlist
       const delIds = new Set(toDelete.map(d => d.id));
@@ -761,9 +828,9 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setWishlist(prev => prev.filter(pid => !delIds.has(pid)));
 
       showToast(`${toDelete.length} out-of-stock product(s) deleted`, 'success');
-    } catch (err) {
+    } catch (err: any) {
       console.error('deleteAllOutOfStockProducts error', err);
-      showToast('Failed to purge out-of-stock products', 'warning');
+      showToast(`Firebase did not purge products: ${err?.message || 'unknown error'}`, 'warning');
     }
   };
 
@@ -856,6 +923,7 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
     handlePaystackPaymentSuccess,
 
     addCustomProduct,
+    syncCatalogToFirestore,
     updateProductStock,
     deleteProduct,
     deleteAllOutOfStockProducts,

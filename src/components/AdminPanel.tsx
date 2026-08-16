@@ -47,6 +47,7 @@ export const AdminPanel: React.FC = () => {
     orders, 
     updateOrderStatus, 
     addCustomProduct, 
+    syncCatalogToFirestore,
     updateProductStock, 
     deleteProduct,
     deleteAllOutOfStockProducts,
@@ -66,6 +67,7 @@ export const AdminPanel: React.FC = () => {
   const [editRoomAddress, setEditRoomAddress] = useState(ownerRoomAddress);
   const [editWhatsApp, setEditWhatsApp] = useState(whatsappNumber);
   const [isSavingRoomAddress, setIsSavingRoomAddress] = useState(false);
+  const [isInitializingFirestore, setIsInitializingFirestore] = useState(false);
 
   React.useEffect(() => {
     setEditRoomAddress(ownerRoomAddress);
@@ -911,6 +913,24 @@ export const AdminPanel: React.FC = () => {
                     Changes made here instantly update the ProductDetailPage badge and prevent out-of-stock purchases.
                   </p>
                 </div>
+
+                <button
+                  type="button"
+                  disabled={isInitializingFirestore}
+                  onClick={async () => {
+                    if (!window.confirm(`Copy the current ${products.length} products to Firestore? This only works when the Firestore catalog is empty.`)) return;
+                    setIsInitializingFirestore(true);
+                    try {
+                      await syncCatalogToFirestore();
+                    } finally {
+                      setIsInitializingFirestore(false);
+                    }
+                  }}
+                  className="px-3 py-2 bg-[#2c2221] hover:bg-[#3d302f] disabled:opacity-60 text-white rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shrink-0"
+                >
+                  <Database className="w-3.5 h-3.5 text-[#f09a8e]" />
+                  <span>{isInitializingFirestore ? 'Publishing…' : 'Publish Catalog to Firestore'}</span>
+                </button>
 
                 {/* Search Box */}
                 <div className="relative min-w-[240px]">

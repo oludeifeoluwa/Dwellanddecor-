@@ -11,6 +11,13 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'toluwalasedaboh65@gmail.com' ||
+        request.auth.token.email == 'dabohtoluwalase@gmail.com'
+      );
+    }
+
     // Users collection
     match /users/{userId} {
       allow read: if isSignedIn();
@@ -26,12 +33,14 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // Temporary working rule:
-    // any signed-in Firebase user can manage products.
-    // This removes the mismatch between local admin state and Firestore auth.
     match /products/{productId} {
       allow read: if true;
-      allow create, update, delete: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    match /catalog/{document=**} {
+      allow read: if true;
+      allow create, update, delete: if isAdmin();
     }
   }
 }
