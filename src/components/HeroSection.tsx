@@ -140,9 +140,12 @@ export const HeroSection: React.FC = () => {
               <button 
                 onClick={(e) => {
                   e.stopPropagation();
-                  addToCart(heroProduct);
+                  if (heroProduct && heroProduct.inStock && heroProduct.stockCount > 0) {
+                    addToCart(heroProduct);
+                  }
                 }}
-                className="w-9 h-9 bg-[#2c2221] text-white rounded-full flex items-center justify-center shadow-xs hover:bg-[#3d302f] transition"
+                disabled={!heroProduct || !heroProduct.inStock || heroProduct.stockCount <= 0}
+                className={`w-9 h-9 rounded-full flex items-center justify-center shadow-xs transition ${(!heroProduct || !heroProduct.inStock || heroProduct.stockCount <= 0) ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-[#2c2221] text-white hover:bg-[#3d302f]'}`}
               >
                 <ShoppingBag className="w-4 h-4" />
               </button>

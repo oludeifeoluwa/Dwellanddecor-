@@ -530,6 +530,13 @@ export const ShopProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Cart helpers - accept either a CartItem or a Product (convenience)
   const addToCart = (item: CartItem | Product, quantity = 1, selectedColor?: string, selectedSize?: string) => {
+    const product = "product" in (item as any) ? (item as CartItem).product : (item as Product);
+
+    if (!product || !product.inStock || product.stockCount <= 0) {
+      showToast('This item is sold out and cannot be added to cart.', 'warning');
+      return;
+    }
+
     const cartItem: CartItem = ("product" in (item as any))
       ? { ...(item as CartItem), quantity: typeof quantity === 'number' && quantity > 0 ? quantity : (item as CartItem).quantity || 1, selectedColor: selectedColor || (item as CartItem).selectedColor, selectedSize: selectedSize || (item as CartItem).selectedSize }
       : {

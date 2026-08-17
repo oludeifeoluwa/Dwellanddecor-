@@ -95,6 +95,7 @@ export const AdminPanel: React.FC = () => {
   const [newProdImg, setNewProdImg] = useState('/images/green_vines_exact.jpg');
   const [newProdDesc, setNewProdDesc] = useState('');
   const [newProdStock, setNewProdStock] = useState(25);
+  const [newProdIsNewArrival, setNewProdIsNewArrival] = useState(true);
 
   // Local storage image upload state
   const [uploadedFileName, setUploadedFileName] = useState<string>('');
@@ -268,9 +269,10 @@ export const AdminPanel: React.FC = () => {
       features: ['Trace-free adhesive', 'Easy setup', 'Premium Quality Decor'],
       specs: [{ label: 'Material', value: 'Durable Quality' }],
       colorOptions: [{ name: 'Standard', hex: '#ffffff' }],
+      isNewArrival: newProdIsNewArrival,
       inStock: newProdStock > 0,
       stockCount: newProdStock,
-      tags: ['New Arrival', 'Student Room Decor']
+      tags: newProdIsNewArrival ? ['New Arrival', 'Student Room Decor'] : ['Student Room Decor']
     });
 
     setNewProdName('');
@@ -278,6 +280,7 @@ export const AdminPanel: React.FC = () => {
     setUploadedFileName('');
     setAdditionalImages([]);
     setNewProdImg('/images/green_vines_exact.jpg');
+    setNewProdIsNewArrival(true);
     setActiveTab('inventory');
   };
 

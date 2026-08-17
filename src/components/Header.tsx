@@ -305,7 +305,7 @@ export const Header: React.FC = () => {
             </button>
           ))}
 
-          <button
+          {/* <button
             onClick={() => {
               setFilter('onSaleOnly', true);
               if (activeTab !== 'shop') setActiveTab('shop');
@@ -314,7 +314,7 @@ export const Header: React.FC = () => {
           >
             <Zap className="w-3 h-3 fill-current" />
             Student Flash Deals
-          </button>
+          </button> */}
         </nav>
       </div>
 
