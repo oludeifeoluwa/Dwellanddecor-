@@ -116,10 +116,10 @@ export const Header: React.FC = () => {
       {/* Top Banner - WhatsApp Custom Orders Announcement */}
       <div className="bg-[#2c2221] text-white px-4 py-2 text-xs font-medium flex items-center justify-between gap-3 shadow-inner">
         <div className="flex items-center gap-2 overflow-hidden">
-          <span className="bg-[#25D366] text-white font-extrabold px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wide flex items-center gap-1 shrink-0 animate-pulse">
+          {/* <span className="bg-[#25D366] text-white font-extrabold px-2.5 py-0.5 rounded-full text-[10px] uppercase tracking-wide flex items-center gap-1 shrink-0 animate-pulse">
             <span className="w-1.5 h-1.5 rounded-full bg-white inline-block"></span>
             WhatsApp
-          </span>
+          </span> */}
           <span className="truncate text-xs sm:text-sm font-medium text-gray-100">
             📢 Custom orders or special requests? <strong className="text-[#f8d0c8] font-bold">DM us on WhatsApp!</strong> We handle custom wall collages, room setups & bulk orders.
           </span>
